@@ -93,13 +93,8 @@ public partial class LootsScanningViewModel : ObservableObject, IDisposable
                     ["Quantity"] = product.ScannedQuantity,
                     ["InitialQuantity"] = product.InitialQuantity,
                     ["Name"] = product.Name ?? "",
-                    ["Color"] = product.Color ?? "",
-                    ["Size"] = product.Size ?? "",
-                    ["Price"] = decimal.TryParse(product.Price, out var p) ? p : 0,
-                    ["ArticCode"] = product.ArticCode ?? "",
                     ["IsReadOnly"] = false,
                     ["Mode"] = InventoryMode.Loots,
-                    ["BoxId"] = product.Box_Id ?? CurrentBoxId
                 });
         });
 
@@ -232,19 +227,26 @@ public partial class LootsScanningViewModel : ObservableObject, IDisposable
         var product = await _productService.GetByBarcodeAsync(slot.Barcode);
         if (product == null)
             return;
-
         var query = new Dictionary<string, object>
         {
             ["Barcode"] = product.Barcode,
             ["Quantity"] = product.ScannedQuantity,
             ["InitialQuantity"] = product.InitialQuantity,
-            ["Name"] = product.Name ?? "",
-            ["Color"] = product.Color ?? "",
-            ["Size"] = product.Size ?? "",
-            ["Price"] = decimal.TryParse(product.Price, out var p) ? p : 0,
-            ["ArticCode"] = product.ArticCode ?? "",
+            ["Name"] = product.Name,
+            ["Category"] = product.Category,
+            ["Uom"] = product.Uom,
+            ["Location"] = product.Location,
+
+
+
+            ["ComparePrice"] = product.ComparePrice,
+            ["SalePrice"] = product.SalePrice,
+            ["Variants"] = product.Variants,
+            ["Employees"] = product.Employees,
+
             ["IsReadOnly"] = false
         };
+
 
         await Shell.Current.GoToAsync(nameof(DetailsPage), new Dictionary<string, object>
         {

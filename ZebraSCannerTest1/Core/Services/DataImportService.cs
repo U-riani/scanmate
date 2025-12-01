@@ -3,63 +3,58 @@ using System.Text.Json;
 using ZebraSCannerTest1.Core.Dtos;
 using ZebraSCannerTest1.Core.Enums;
 using ZebraSCannerTest1.Core.Interfaces;
+using ZebraSCannerTest1.Core.Models;
 using ZebraSCannerTest1.Data;
 
 namespace ZebraSCannerTest1.Core.Services
 {
-    /// <summary>
-    /// Handles importing data from multiple sources (Excel, JSON, or SQLite DB).
-    /// </summary>
     public class DataImportService : IDataImportService
     {
-        private readonly SqliteConnection _conn;
         private readonly ExcelImportService _excelImport;
 
         public DataImportService(SqliteConnection conn)
         {
-            _conn = conn;
             _excelImport = new ExcelImportService(conn);
         }
 
-        // ✅ Import Excel (already uses MiniExcel)
+        private SqliteConnection GetConn(InventoryMode mode)
+        {
+            var dbName = mode == InventoryMode.Loots
+                ? "zebraScanner_loots.db"
+                : "zebraScanner_standard.db";
+
+            var path = Path.Combine(FileSystem.AppDataDirectory, dbName);
+            var conn = new SqliteConnection($"Data Source={path}");
+            conn.Open();
+            return conn;
+        }
+
         public async Task ImportExcelAsync(Stream stream, InventoryMode mode = InventoryMode.Standard, string? fileName = null)
         {
             await _excelImport.ImportExcelAsync(stream, mode, fileName);
         }
 
-
-        // ✅ Import SQLite DB (from FilePicker Stream)
         public async Task ImportDbAsync(Stream dbStream, InventoryMode mode = InventoryMode.Standard)
         {
             try
             {
-                // ✅ pick correct file for each mode
                 var fileName = mode == InventoryMode.Loots
                     ? "zebraScanner_loots.db"
                     : "zebraScanner_standard.db";
 
                 var targetPath = Path.Combine(FileSystem.AppDataDirectory, fileName);
 
-                // ✅ optional: backup before overwrite
                 if (File.Exists(targetPath))
                 {
                     var backup = targetPath + ".bak";
                     File.Copy(targetPath, backup, true);
-                    Console.WriteLine($"[DB] Backup created: {backup}");
                 }
 
-                // ✅ overwrite only that mode’s DB file
                 using (var dst = File.Create(targetPath))
                     await dbStream.CopyToAsync(dst);
 
-                // ✅ reconnect only to that mode’s DB
-                _conn.Close();
-                _conn.ConnectionString = $"Data Source={targetPath}";
-                _conn.Open();
-
-                DatabaseInitializer.Initialize(_conn, mode);
-
-                Console.WriteLine($"[DB] Successfully imported {mode} DB → {targetPath}");
+                using var conn = GetConn(mode);
+                DatabaseInitializer.Initialize(conn, mode);
             }
             catch (Exception ex)
             {
@@ -67,110 +62,116 @@ namespace ZebraSCannerTest1.Core.Services
             }
         }
 
-
-        // ✅ Import JSON via Stream
         public async Task<int> ImportJsonAsync(Stream jsonStream, InventoryMode mode = InventoryMode.Standard)
         {
             string table = mode == InventoryMode.Loots ? "LootsProducts" : "Products";
             bool isLoots = mode == InventoryMode.Loots;
 
-            if (isLoots)
-            {
-                using var check = _conn.CreateCommand();
-                check.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='LootsProducts';";
-                var exists = check.ExecuteScalar() != null;
-                if (!exists)
-                    throw new InvalidOperationException("LootsProducts table not found. Please initialize database first.");
-            }
-
+            using var conn = GetConn(mode);
             using var reader = new StreamReader(jsonStream);
-            var json = await reader.ReadToEndAsync();
 
-            // Deserialize JSON to list of DTOs
+            var json = await reader.ReadToEndAsync();
+            //Console.WriteLine("-+++++++++++----respone" + json);
             var items = JsonSerializer.Deserialize<List<JsonDto>>(json,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
+
             if (items == null || items.Count == 0)
                 throw new Exception("No valid items found in JSON file.");
-            // 🔥 Delete old data for this mode first
-            using (var clear = _conn.CreateCommand())
+
+            using (var clear = conn.CreateCommand())
             {
-                string clearTable = isLoots ? "LootsProducts" : "Products";
-                clear.CommandText = $"DELETE FROM {clearTable};";
+                clear.CommandText = $"DELETE FROM {table};";
                 clear.ExecuteNonQuery();
-                Console.WriteLine($"[IMPORT] Cleared old data from {clearTable}");
+            }
+            // Clear logs as well
+            using (var clearLogs = conn.CreateCommand())
+            {
+                clearLogs.CommandText = mode == InventoryMode.Loots
+                    ? "DELETE FROM LootsScanLogs;"
+                    : "DELETE FROM ScanLogs;";
+                clearLogs.ExecuteNonQuery();
             }
 
-            using var tx = _conn.BeginTransaction();
-            using var insert = _conn.CreateCommand();
 
+            using var tx = conn.BeginTransaction();
+            using var insert = conn.CreateCommand();
             insert.Transaction = tx;
+
             insert.CommandText = isLoots
                 ? $@"
-                    INSERT OR REPLACE INTO {table}
-                    (Barcode, Box_Id, InitialQuantity, ScannedQuantity, CreatedAt, UpdatedAt, Name, Color, Size, Price, ArticCode)
-                    VALUES ($barcode, $box, $initial, $scanned, $created, $updated, $name, $color, $size, $price, $artic);"
+INSERT OR REPLACE INTO {table}
+(Barcode, Box_Id, InitialQuantity, ScannedQuantity, CreatedAt, UpdatedAt,
+ Name, Category, Uom, Location,
+ ComparePrice, SalePrice, VariantsJson, EmployeesJson, Product_id)
+VALUES
+($barcode, $box, $initial, $scanned, $created, $updated,
+ $name, $category, $uom, $location,
+ $compare, $sale, $variants, $employees, $product_id);"
                 : $@"
-                    INSERT OR REPLACE INTO {table}
-                    (Barcode, InitialQuantity, ScannedQuantity, CreatedAt, UpdatedAt, Name, Color, Size, Price, ArticCode)
-                    VALUES ($barcode, $initial, $scanned, $created, $updated, $name, $color, $size, $price, $artic);";
+INSERT OR REPLACE INTO {table}
+(Barcode, InitialQuantity, ScannedQuantity, CreatedAt, UpdatedAt,
+ Name, Category, Uom, Location,
+ ComparePrice, SalePrice, VariantsJson, EmployeesJson, Product_id)
+VALUES
+($barcode, $initial, $scanned, $created, $updated,
+ $name, $category, $uom, $location,
+ $compare, $sale, $variants, $employees, $product_id);";
 
-            // Add parameters
             insert.Parameters.Add("$barcode", SqliteType.Text);
-            insert.Parameters.Add("$box", SqliteType.Text);
-            insert.Parameters.Add("$initial", SqliteType.Integer);
-            insert.Parameters.Add("$scanned", SqliteType.Integer);
+            insert.Parameters.Add("$initial", SqliteType.Real);
+            insert.Parameters.Add("$scanned", SqliteType.Real);
             insert.Parameters.Add("$created", SqliteType.Text);
             insert.Parameters.Add("$updated", SqliteType.Text);
             insert.Parameters.Add("$name", SqliteType.Text);
-            insert.Parameters.Add("$color", SqliteType.Text);
-            insert.Parameters.Add("$size", SqliteType.Text);
-            insert.Parameters.Add("$price", SqliteType.Text);
-            insert.Parameters.Add("$artic", SqliteType.Text);
+            insert.Parameters.Add("$category", SqliteType.Text);
+            insert.Parameters.Add("$uom", SqliteType.Text);
+            insert.Parameters.Add("$location", SqliteType.Text);
+            insert.Parameters.Add("$compare", SqliteType.Real);
+            insert.Parameters.Add("$sale", SqliteType.Real);
+            insert.Parameters.Add("$variants", SqliteType.Text);
+            insert.Parameters.Add("$employees", SqliteType.Text);
+            insert.Parameters.Add("$product_id", SqliteType.Text);
 
             int processed = 0;
-            var now = DateTime.UtcNow.ToString("o");
+            string now = DateTime.UtcNow.ToString("o");
 
-            try
+            foreach (var p in items)
             {
-                foreach (var p in items)
-                {
-                    if (string.IsNullOrWhiteSpace(p.Barcode))
-                        continue;
+                //foreach(var i in p.Variants)
+                //{
+                //    Console.WriteLine("+++++++++" + i.Name);
+                //}
+                //Console.WriteLine(JsonSerializer.Serialize(p));
 
-                    insert.Parameters["$barcode"].Value = p.Barcode.Trim();
-                    insert.Parameters["$initial"].Value = p.InitialQuantity;
-                    insert.Parameters["$scanned"].Value = p.ScannedQuantity;
-                    insert.Parameters["$created"].Value = string.IsNullOrWhiteSpace(p.CreatedAt) ? now : p.CreatedAt;
-                    insert.Parameters["$updated"].Value = string.IsNullOrWhiteSpace(p.UpdatedAt) ? now : p.UpdatedAt;
-                    insert.Parameters["$name"].Value = p.Name ?? "";
-                    insert.Parameters["$color"].Value = p.Color ?? "";
-                    insert.Parameters["$size"].Value = p.Size ?? "";
-                    insert.Parameters["$price"].Value = p.Price ?? "";
-                    insert.Parameters["$artic"].Value = p.ArticCode ?? "";
+                insert.Parameters["$barcode"].Value = p.Barcode;
 
-                    if (isLoots)
-                    {
-                        insert.Parameters["$box"].Value =
-                            p.GetType().GetProperty("Box_Id")?.GetValue(p)?.ToString()?.Trim()
-                            ?? "UnknownBox";
-                    }
 
-                    insert.ExecuteNonQuery();
-                    processed++;
-                }
 
-                tx.Commit();
-            } catch (Exception ex)
-            {
-                tx.Rollback();
-                Console.WriteLine($"❌ JSON import failed after {processed} rows → {ex.Message}");
-                throw;
+                insert.Parameters["$initial"].Value = p.InitialQuantity;
+                insert.Parameters["$scanned"].Value = p.ScannedQuantity;
+                insert.Parameters["$created"].Value = p.CreatedAt ?? now;
+                insert.Parameters["$updated"].Value = p.UpdatedAt ?? now;
+                insert.Parameters["$name"].Value = p.Name ?? "";
+                insert.Parameters["$category"].Value = p.Category ?? "";
+                insert.Parameters["$uom"].Value = p.Uom ?? "";
+                insert.Parameters["$location"].Value = p.Location ?? "";
+                insert.Parameters["$compare"].Value = p.ComparePrice;
+                insert.Parameters["$sale"].Value = p.SalePrice;
+
+                insert.Parameters["$variants"].Value =
+                    JsonSerializer.Serialize(p.Variants ?? new List<VariantModel>());
+
+                insert.Parameters["$employees"].Value =
+                    JsonSerializer.Serialize(p.employee_ids ?? []);
+                insert.Parameters["$product_id"].Value = p.ProductId;
+
+                insert.ExecuteNonQuery();
+                processed++;
             }
-            Console.WriteLine($"[IMPORT] ✅ JSON import complete → {processed} rows ({mode})");
 
+            tx.Commit();
             return processed;
         }
     }
-
 }

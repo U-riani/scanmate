@@ -79,11 +79,11 @@
                         <Label Text="Scan" Grid.Column="2" Style="{StaticResource HeaderStyle}" />
                         <Label Text="Initial" Grid.Column="3" Style="{StaticResource HeaderStyle}" />
                         <Label Text="Diff" Grid.Column="4" Style="{StaticResource HeaderStyle}" />
-                        <Label Text="ArticCode" Grid.Column="5" Style="{StaticResource HeaderStyle}" />
-                        <Label Text="Name" Grid.Column="6" Style="{StaticResource HeaderStyle}" />
-                        <Label Text="Color" Grid.Column="7" Style="{StaticResource HeaderStyle}" />
-                        <Label Text="Size" Grid.Column="8" Style="{StaticResource HeaderStyle}" />
-                        <Label Text="Price" Grid.Column="9" Style="{StaticResource HeaderStyle}" />
+                        <Label Text="Name" Grid.Column="5" Style="{StaticResource HeaderStyle}" />
+                        <Label Text="Category" Grid.Column="6" Style="{StaticResource HeaderStyle}" />
+                        <Label Text="C.Price" Grid.Column="7" Style="{StaticResource HeaderStyle}" />
+                        <Label Text="S.Price" Grid.Column="8" Style="{StaticResource HeaderStyle}" />
+                        <Label Text="Uom" Grid.Column="9" Style="{StaticResource HeaderStyle}" />
                         <Label Text="→" Grid.Column="10" Style="{StaticResource HeaderStyle}" />
 
                     </Grid>
@@ -112,11 +112,11 @@
                                     <Label Grid.Column="2" Text="{Binding ScannedQuantity}" Style="{StaticResource CellStyle}" />
                                     <Label Grid.Column="3" Text="{Binding InitialQuantity}" Style="{StaticResource CellStyle}" />
                                     <Label Grid.Column="4" Text="{Binding Difference}" Style="{StaticResource CellStyle}" />
-                                    <Label Grid.Column="5" Text="{Binding ArticCode}" Style="{StaticResource CellStyle}" />
-                                    <Label Grid.Column="6" Text="{Binding Name}" Style="{StaticResource CellStyle}" />
-                                    <Label Grid.Column="7" Text="{Binding Color}" Style="{StaticResource CellStyle}" />
-                                    <Label Grid.Column="8" Text="{Binding Size}" Style="{StaticResource CellStyle}" />
-                                    <Label Grid.Column="9" Text="{Binding Price}" Style="{StaticResource CellStyle}" />
+                                    <Label Grid.Column="5" Text="{Binding Name}" Style="{StaticResource CellStyle}" />
+                                    <Label Grid.Column="6" Text="{Binding Category}" Style="{StaticResource CellStyle}" />
+                                    <Label Grid.Column="7" Text="{Binding ComparePrice}" Style="{StaticResource CellStyle}" />
+                                    <Label Grid.Column="8" Text="{Binding SalePrice}" Style="{StaticResource CellStyle}" />
+                                    <Label Grid.Column="9" Text="{Binding Uom}" Style="{StaticResource CellStyle}" />
                                     <Button Grid.Column="10"
             Text="➡"
             BackgroundColor="#a9d5a5"

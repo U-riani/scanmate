@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ZebraSCannerTest1.Core.Enums;
 
 namespace ZebraSCannerTest1;
-
+//check
 public static class MauiProgram
 {
     public static IServiceProvider ServiceProvider { get; private set; }
@@ -30,22 +30,30 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
-        // === Database connection ===
-        builder.Services.AddSingleton<SqliteConnection>(_ =>
-        {
-            var mode = Preferences.Get("CurrentMode", "Standard") == "Loots"
-                ? InventoryMode.Loots
-                : InventoryMode.Standard;
+        //var basePath = FileSystem.AppDataDirectory;
+        //var std = Path.Combine(basePath, "zebraScanner_standard.db");
+        //var loots = Path.Combine(basePath, "zebraScanner_loots.db");
 
-            return DatabaseInitializer.GetConnection(mode);
+        //try { if (File.Exists(std)) File.Delete(std); } catch { }
+        //try { if (File.Exists(loots)) File.Delete(loots); } catch { }
+
+        // // === Database connection ===
+        builder.Services.AddSingleton<SqliteConnection>(provider =>
+        {
+            var path = Path.Combine(FileSystem.AppDataDirectory, "zebraScanner_standard.db");
+            var conn = new SqliteConnection($"Data Source={path}");
+            conn.Open();
+            DatabaseInitializer.Initialize(conn, InventoryMode.Standard);
+            return conn;
         });
 
-        builder.Services.AddSingleton<SqliteConnection>(sp =>
-        {
-            var salesConn = SalesDatabaseInitializer.GetConnection();
-            SalesDatabaseInitializer.InitializeConnection(salesConn);
-            return salesConn;
-        });
+
+        //builder.Services.AddSingleton<SqliteConnection>(sp =>
+        //{
+        //    var salesConn = SalesDatabaseInitializer.GetConnection();
+        //    SalesDatabaseInitializer.InitializeConnection(salesConn);
+        //    return salesConn;
+        //});
 
         // === Core services & repositories ===
         builder.Services.AddSingleton<IProductRepository, ProductRepository>();
@@ -65,6 +73,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<IApiService, ApiService>();
         builder.Services.AddSingleton<IServerImportService, ServerImportService>();
         builder.Services.AddSingleton<SalesExcelImportService>();
+        builder.Services.AddTransient<IScanMateServerService, ScanMateServerService>();
+
 
         // === UI helpers ===
         builder.Services.AddSingleton<IDialogService, MauiDialogService>();

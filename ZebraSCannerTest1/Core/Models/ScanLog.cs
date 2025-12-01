@@ -6,6 +6,7 @@ namespace ZebraSCannerTest1.Core.Models;
 public class ScanLog
 {
     public int Id { get; set; }
+    public int ProductId { get; set; }
     public string Barcode { get; set; }
     public int Was { get; set; }
     public int IncrementBy { get; set; }

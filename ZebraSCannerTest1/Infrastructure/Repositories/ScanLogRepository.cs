@@ -33,16 +33,16 @@ namespace ZebraSCannerTest1.Infrastructure.Repositories
             {
                 cmd.CommandText = $@"
                     INSERT INTO {table}
-                    (Barcode, Was, IncrementBy, IsValue, UpdatedAt, Section, IsManual, Box_Id)
-                    VALUES ($b, $w, $i, $v, $u, $s, $m, $box)";
+                    (Barcode, Was, IncrementBy, IsValue, UpdatedAt, Section, IsManual, Product_id, Box_Id)
+                    VALUES ($b, $w, $i, $v, $u, $s, $m, $pid, $box)";
                 cmd.Parameters.AddWithValue("$box", log.Box_Id ?? (object)DBNull.Value);
             }
             else
             {
                 cmd.CommandText = $@"
                     INSERT INTO {table}
-                    (Barcode, Was, IncrementBy, IsValue, UpdatedAt, Section, IsManual)
-                    VALUES ($b, $w, $i, $v, $u, $s, $m)";
+                    (Barcode, Was, IncrementBy, IsValue, UpdatedAt, Section, IsManual, Product_id)
+                    VALUES ($b, $w, $i, $v, $u, $s, $m, $pid)";
             }
 
             cmd.Parameters.AddWithValue("$b", log.Barcode);
@@ -52,6 +52,8 @@ namespace ZebraSCannerTest1.Infrastructure.Repositories
             cmd.Parameters.AddWithValue("$u", log.UpdatedAt.ToString("o"));
             cmd.Parameters.AddWithValue("$s", log.Section ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("$m", log.IsManual ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("$pid", log.ProductId);
+
 
             Console.WriteLine($"------ Inserting → Mode={mode}, Table={table}, Barcode={log.Barcode}, Box={log.Box_Id ?? "NULL"}");
 
@@ -67,7 +69,7 @@ namespace ZebraSCannerTest1.Infrastructure.Repositories
 
             using var cmd = GetConnection(mode).CreateCommand();
             cmd.CommandText = $@"
-                SELECT Barcode, Was, IncrementBy, IsValue, UpdatedAt, IsManual, Section
+                SELECT Barcode, Was, IncrementBy, IsValue, UpdatedAt, IsManual, Section, Product_id
                        {(mode == InventoryMode.Loots ? ", Box_Id" : "")}
                 FROM {table}
                 WHERE Barcode=$b
@@ -85,15 +87,55 @@ namespace ZebraSCannerTest1.Infrastructure.Repositories
                     IsValue = reader.GetInt32(3),
                     UpdatedAt = DateTime.Parse(reader.GetString(4)),
                     IsManual = reader.IsDBNull(5) ? null : reader.GetInt32(5),
-                    Section = reader.IsDBNull(6) ? null : reader.GetString(6)
+                    Section = reader.IsDBNull(6) ? null : reader.GetString(6),
+                    ProductId = reader.IsDBNull(7) ? 0 : reader.GetInt32(7)
                 };
                 if (mode == InventoryMode.Loots)
-                    log.Box_Id = reader.IsDBNull(7) ? null : reader.GetString(7);
+                    log.Box_Id = reader.IsDBNull(8) ? null : reader.GetString(8);
 
                 logs.Add(log);
             }
             return logs;
         }
+
+        public async Task<List<ScanLog>> GetLogsAsync(InventoryMode mode)
+        {
+            var list = new List<ScanLog>();
+            var table = GetTable(mode);
+
+            using var cmd = GetConnection(mode).CreateCommand();
+            cmd.CommandText = $@"
+        SELECT Id, Barcode, Was, IncrementBy, IsValue, UpdatedAt, IsManual, Section, Product_id
+               {(mode == InventoryMode.Loots ? ", Box_Id" : "")}
+        FROM {table}
+        ORDER BY UpdatedAt ASC";   // server expects chronological order
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var log = new ScanLog
+                {
+                    Id = reader.GetInt32(0),
+                    Barcode = reader.GetString(1),
+                    Was = reader.GetInt32(2),
+                    IncrementBy = reader.GetInt32(3),
+                    IsValue = reader.GetInt32(4),
+                    UpdatedAt = DateTime.Parse(reader.GetString(5)),
+                    IsManual = reader.IsDBNull(6) ? null : reader.GetInt32(6),
+                    Section = reader.IsDBNull(7) ? null : reader.GetString(7),
+                    ProductId = reader.IsDBNull(8) ? 0 : reader.GetInt32(8)
+
+                };
+
+                if (mode == InventoryMode.Loots)
+                    log.Box_Id = reader.IsDBNull(9) ? null : reader.GetString(9);
+
+                list.Add(log);
+            }
+
+            return list;
+        }
+
 
         public async Task ClearAsync(InventoryMode mode = InventoryMode.Standard)
         {

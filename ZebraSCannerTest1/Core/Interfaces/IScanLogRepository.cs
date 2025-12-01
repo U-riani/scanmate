@@ -13,6 +13,8 @@ namespace ZebraSCannerTest1.Core.Interfaces
         Task InsertAsync(ScanLog log, InventoryMode mode = InventoryMode.Standard);
         Task<IEnumerable<ScanLog>> GetByBarcodeAsync(string barcode, InventoryMode mode = InventoryMode.Standard);
         Task ClearAsync(InventoryMode mode = InventoryMode.Standard);
+        Task<List<ScanLog>> GetLogsAsync(InventoryMode mode);
+
     }
 
 }

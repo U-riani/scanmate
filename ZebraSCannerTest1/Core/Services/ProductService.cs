@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using ZebraSCannerTest1.Core.Enums;
 using ZebraSCannerTest1.Core.Interfaces;
 using ZebraSCannerTest1.Core.Models;
+using ZebraSCannerTest1.Data;
 
 
 namespace ZebraSCannerTest1.Core.Services
@@ -69,45 +70,105 @@ namespace ZebraSCannerTest1.Core.Services
             }
         }
 
-        public async Task AddOrUpdateAsync(Product product, InventoryMode mode = InventoryMode.Standard)
+        public async Task AddOrUpdateAsync(Product p, InventoryMode mode = InventoryMode.Standard)
         {
             try
             {
-                if (mode == InventoryMode.Loots)
-                {
-                    var existing = await _lootsRepo.FindAsync(product.Barcode, product.Box_Id);
-                    if (existing is null)
-                        await _lootsRepo.AddAsync(new LootProduct
-                        {
-                            Barcode = product.Barcode,
-                            Box_Id = product.Box_Id,
-                            InitialQuantity = product.InitialQuantity,
-                            ScannedQuantity = product.ScannedQuantity,
-                            CreatedAt = product.CreatedAt,
-                            UpdatedAt = product.UpdatedAt,
-                            Name = product.Name,
-                            Color = product.Color,
-                            Size = product.Size,
-                            Price = product.Price?.ToString(),
-                            ArticCode = product.ArticCode
-                        });
-                    else
-                        await _lootsRepo.UpdateAsync(product); // or implement UpdateAsync in LootsRepo later
-                    return;
-                }
+                var existing = await _repository.FindAsync(p.Barcode, mode);
 
-                // Standard
-                var exist = await _repository.FindAsync(product.Barcode, mode);
-                if (exist is null)
-                    await _repository.AddAsync(product, mode);
+                if (existing == null)
+                {
+                    await _repository.AddAsync(p, mode);
+                }
                 else
-                    await _repository.UpdateAsync(product, mode);
+                {
+                    await _repository.UpdateAsync(p, mode);
+                }
             }
             catch (Exception ex)
             {
                 _logger.Error("Failed to add or update product", ex);
             }
         }
+        public List<StatsProduct> GetAllProducts(InventoryMode mode)
+        {
+            var list = new List<StatsProduct>();
+            string table = mode == InventoryMode.Loots ? "LootsProducts" : "Products";
+
+            using var conn = DatabaseInitializer.GetConnection(mode);
+            using var cmd = conn.CreateCommand();
+
+            cmd.CommandText = mode == InventoryMode.Loots
+                ? @"SELECT 
+            Barcode, Box_Id,
+            InitialQuantity, ScannedQuantity,
+            CreatedAt, UpdatedAt,
+            Name, Category, Uom, Location,
+            ComparePrice, SalePrice,
+            VariantsJson, EmployeesJson, Product_id
+        FROM LootsProducts"
+                : @"SELECT 
+            Barcode,
+            InitialQuantity, ScannedQuantity,
+            CreatedAt, UpdatedAt,
+            Name, Category, Uom, Location,
+            ComparePrice, SalePrice,
+            VariantsJson, EmployeesJson, Product_id
+        FROM Products";
+
+
+            using var r = cmd.ExecuteReader();
+
+            while (r.Read())
+            {
+                if (mode == InventoryMode.Loots)
+                {
+                    list.Add(new StatsProduct
+                    {
+                        Barcode = r.GetString(0),
+                        BoxId = r.IsDBNull(1) ? "" : r.GetString(1),
+                        InitialQuantity = r.GetDouble(2),
+                        ScannedQuantity = r.GetDouble(3),
+                        CreatedAt = DateTime.Parse(r.GetString(4)),
+                        UpdatedAt = DateTime.Parse(r.GetString(5)),
+                        Name = r.IsDBNull(6) ? "" : r.GetString(6),
+                        Category = r.IsDBNull(7) ? "" : r.GetString(7),
+                        Uom = r.IsDBNull(8) ? "" : r.GetString(8),
+                        Location = r.IsDBNull(9) ? "" : r.GetString(9),
+                        ComparePrice = r.IsDBNull(10) ? 0 : r.GetDouble(10),
+                        SalePrice = r.IsDBNull(11) ? 0 : r.GetDouble(11),
+                        VariantsJson = r.IsDBNull(12) ? "" : r.GetString(12),
+                        EmployeesJson = r.IsDBNull(13) ? "" : r.GetString(13),
+                        ProductId = r.IsDBNull(14) ? 0 : r.GetInt32(14)
+                    });
+                }
+                else // Standard mode (NO Box_Id)
+                {
+                    list.Add(new StatsProduct
+                    {
+                        Barcode = r.GetString(0),
+                        BoxId = "", // always empty in Standard
+                        InitialQuantity = r.GetDouble(1),
+                        ScannedQuantity = r.GetDouble(2),
+                        CreatedAt = DateTime.Parse(r.GetString(3)),
+                        UpdatedAt = DateTime.Parse(r.GetString(4)),
+                        Name = r.IsDBNull(5) ? "" : r.GetString(5),
+                        Category = r.IsDBNull(6) ? "" : r.GetString(6),
+                        Uom = r.IsDBNull(7) ? "" : r.GetString(7),
+                        Location = r.IsDBNull(8) ? "" : r.GetString(8),
+                        ComparePrice = r.IsDBNull(9) ? 0 : r.GetDouble(9),
+                        SalePrice = r.IsDBNull(10) ? 0 : r.GetDouble(10),
+                        VariantsJson = r.IsDBNull(11) ? "" : r.GetString(11),
+                        EmployeesJson = r.IsDBNull(12) ? "" : r.GetString(12),
+                        ProductId = r.IsDBNull(13) ? 0 : r.GetInt32(13)
+                    });
+                }
+            }
+
+            return list;
+
+        }
+
 
 
         public async Task<IEnumerable<Product>> GetProductsByBoxAsync(string boxId, InventoryMode mode = InventoryMode.Standard)

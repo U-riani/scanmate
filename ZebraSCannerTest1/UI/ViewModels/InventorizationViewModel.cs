@@ -338,13 +338,20 @@ public partial class InventorizationViewModel : ObservableObject, IDisposable
             ["Barcode"] = product.Barcode,
             ["Quantity"] = product.ScannedQuantity,
             ["InitialQuantity"] = product.InitialQuantity,
-            ["Name"] = product.Name ?? "",
-            ["Color"] = product.Color ?? "",
-            ["Size"] = product.Size ?? "",
-            ["Price"] = decimal.TryParse(product.Price, out var p) ? p : 0,
-            ["ArticCode"] = product.ArticCode ?? "",
+            ["Name"] = product.Name,
+            ["Category"] = product.Category,
+            ["Uom"] = product.Uom,
+            ["Location"] = product.Location,
+
+
+            ["ComparePrice"] = product.ComparePrice,
+            ["SalePrice"] = product.SalePrice,
+            ["Variants"] = product.Variants,
+            ["Employees"] = product.Employees,
+
             ["IsReadOnly"] = false
         };
+
 
         await Shell.Current.GoToAsync(nameof(DetailsPage), new Dictionary<string, object>
         {

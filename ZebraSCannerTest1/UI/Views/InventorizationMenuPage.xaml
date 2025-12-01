@@ -6,7 +6,7 @@
              xmlns:views="clr-namespace:ZebraSCannerTest1.UI.Views"
              Title="InventorizationMenuPage">
     
-    <Grid RowDefinitions="*,*,*,*,*"
+    <Grid RowDefinitions="*,*,*,*,*,*"
       VerticalOptions="FillAndExpand"
       HorizontalOptions="Center">
 
@@ -20,6 +20,15 @@
         Command="{Binding NavigateToContinueCommand}"/>
 
         <Button Grid.Row="1"
+            Text="CONNECT"
+            FontSize="20"
+            BackgroundColor="CornflowerBlue"
+            TextColor="White"
+            WidthRequest="200"
+            HeightRequest="60"
+            Command="{Binding OpenConnectCommand}"/>   
+
+        <Button Grid.Row="2"
         Text="RESULT"
         FontSize="20"
         BackgroundColor="LightGrey"
@@ -28,7 +37,7 @@
         HeightRequest="60"
         Command="{Binding NavigateToResultCommand}"/>
 
-        <Button Grid.Row="2"
+        <Button Grid.Row="3"
          Text="EXPORT"
          FontSize="20"
          BackgroundColor="CadetBlue"
@@ -37,7 +46,7 @@
          HeightRequest="60"
          Command="{Binding ExportCommand}"/>
 
-        <Button Grid.Row="3"
+        <Button Grid.Row="4"
          Text="IMPORT"
          FontSize="20"
          BackgroundColor="#FFC107"
@@ -46,7 +55,7 @@
          HeightRequest="60"
          Command="{Binding ImportCommand}"/>
 
-        <Button Grid.Row="4"
+        <Button Grid.Row="5"
         Text="CLEAR"
          FontSize="20"
          BackgroundColor="IndianRed"

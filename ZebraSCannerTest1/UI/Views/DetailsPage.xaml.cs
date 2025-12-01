@@ -9,10 +9,6 @@ namespace ZebraSCannerTest1.UI.Views;
 [QueryProperty(nameof(Quantity), "Quantity")]
 [QueryProperty(nameof(InitialQuantity), "InitialQuantity")]
 [QueryProperty(nameof(Name), "Name")]
-[QueryProperty(nameof(Color), "Color")]
-[QueryProperty(nameof(Size), "Size")]
-[QueryProperty(nameof(Price), "Price")]
-[QueryProperty(nameof(ArticCode), "ArticCode")]
 [QueryProperty(nameof(IsReadOnly), "IsReadOnly")]
 [QueryProperty(nameof(Mode), "Mode")]
 [QueryProperty(nameof(BoxId), "BoxId")]
@@ -31,10 +27,7 @@ public partial class DetailsPage : ContentPage
     public int InitialQuantity { set => _vm.InitialQuantity = value; }
 
     public string Name { set => _vm.ProductName = value; }
-    public string Color { set => _vm.ProductColor = value; }
-    public string Size { set => _vm.ProductSize = value; }
-    public decimal Price { set => _vm.ProductPrice = value; }
-    public string ArticCode { set => _vm.ProductArticCode = value; }
+
 
     public DetailsPage(DetailsViewModel vm)
     {

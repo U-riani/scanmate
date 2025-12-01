@@ -1,6 +1,8 @@
 ﻿namespace ZebraSCannerTest1.Core.Dtos;
 public class ExcelProductDto
 {
+    public int ProductId { get; set; }
+
     public int Id { get; set; }
     public string Barcode { get; set; }
     public int Quantity { get; set; }

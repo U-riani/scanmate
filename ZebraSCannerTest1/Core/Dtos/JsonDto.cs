@@ -1,24 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ZebraSCannerTest1.Core.Models;
 
-namespace ZebraSCannerTest1.Core.Dtos
+public class JsonDto
 {
-    public class JsonDto
-    {
+    public int ProductId { get; set; }
 
-            public string Barcode { get; set; }
-            public int InitialQuantity { get; set; }
-            public int ScannedQuantity { get; set; }
-            public string CreatedAt { get; set; }
-            public string UpdatedAt { get; set; }
-            public string Name { get; set; }
-            public string Color { get; set; }
-            public string Size { get; set; }
-            public string Price { get; set; }
-            public string ArticCode { get; set; }
-        }
-    
+    public string Barcode { get; set; }
+    public double InitialQuantity { get; set; }
+    public double ScannedQuantity { get; set; }
+    public string CreatedAt { get; set; }
+    public string UpdatedAt { get; set; }
+
+    public string Name { get; set; }
+    public string Category { get; set; }
+    public string Uom { get; set; }
+    public string Location { get; set; }
+
+    public List<VariantModel> Variants { get; set; }
+    public List<int> employee_ids { get; set; }
+
+    public double ComparePrice { get; set; }
+    public double SalePrice { get; set; }
 }

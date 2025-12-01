@@ -134,11 +134,10 @@ namespace ZebraSCannerTest1.Core.Services
             var product = new Product
             {
                 Barcode = barcode,
-                Box_Id = _mode == InventoryMode.Loots ? _currentBoxId : null,
                 InitialQuantity = 0,
                 ScannedQuantity = 1,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.Parse(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")),
+                UpdatedAt = DateTime.Parse(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"))
             };
 
             await _products.AddAsync(product, _mode);
@@ -149,7 +148,7 @@ namespace ZebraSCannerTest1.Core.Services
                 Was = product.ScannedQuantity - 1,
                 IncrementBy = 1,
                 IsValue = product.ScannedQuantity,
-                UpdatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.Parse(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")),
                 Section = _mode == InventoryMode.Loots ? null : CurrentSection,
                 Box_Id = _mode == InventoryMode.Loots
         ? (!string.IsNullOrWhiteSpace(_currentBoxId) ? _currentBoxId : "Unassigned")
@@ -168,7 +167,7 @@ namespace ZebraSCannerTest1.Core.Services
         private async Task UpdateProductAsync(Product product)
         {
             product.ScannedQuantity++;
-            product.UpdatedAt = DateTime.UtcNow;
+            product.UpdatedAt = DateTime.Parse(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
 
             await _products.UpdateAsync(product, _mode);
 
@@ -178,8 +177,9 @@ namespace ZebraSCannerTest1.Core.Services
                 Was = product.ScannedQuantity - 1,
                 IncrementBy = 1,
                 IsValue = product.ScannedQuantity,
-                UpdatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.Parse(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")),
                 Section = _mode == InventoryMode.Loots ? null : CurrentSection,
+                ProductId = product.ProductId,
                 Box_Id = _mode == InventoryMode.Loots
         ? (!string.IsNullOrWhiteSpace(_currentBoxId) ? _currentBoxId : "Unassigned")
         : null

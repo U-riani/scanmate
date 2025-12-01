@@ -56,7 +56,6 @@ namespace ZebraSCannerTest1.Infrastructure.Repositories
             cmd.Parameters.AddWithValue("$b", product.Barcode);
 
             
-                cmd.Parameters.AddWithValue("$box", product.Box_Id is null ? DBNull.Value : product.Box_Id);
 
             await cmd.ExecuteNonQueryAsync();
         }
@@ -136,7 +135,6 @@ namespace ZebraSCannerTest1.Infrastructure.Repositories
                     CreatedAt = DateTime.Parse(reader.GetString(4)),
                     UpdatedAt = DateTime.Parse(reader.GetString(5))
                 };
-                product.Box_Id = reader.IsDBNull(1) ? null : reader.GetString(1);
 
                 return product;
             }
@@ -170,7 +168,6 @@ namespace ZebraSCannerTest1.Infrastructure.Repositories
                 };
 
 
-                product.Box_Id = reader.IsDBNull(1) ? null : reader.GetString(1);
 
                 products.Add(product);
             }

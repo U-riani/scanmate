@@ -38,61 +38,91 @@ namespace ZebraSCannerTest1.Data
         public static void Initialize(SqliteConnection conn, InventoryMode mode)
         {
             using var cmd = conn.CreateCommand();
+
             cmd.CommandText = @"
 PRAGMA foreign_keys = ON;
 
+-- =======================================
+-- STANDARD INVENTORY TABLE
+-- =======================================
 CREATE TABLE IF NOT EXISTS Products (
     Barcode TEXT PRIMARY KEY,
-    InitialQuantity INTEGER NOT NULL DEFAULT 0,
-    ScannedQuantity INTEGER NOT NULL DEFAULT 0,
+    InitialQuantity REAL NOT NULL DEFAULT 0,
+    ScannedQuantity REAL NOT NULL DEFAULT 0,
     CreatedAt TEXT NOT NULL,
     UpdatedAt TEXT NOT NULL,
+
     Name TEXT,
-    Color TEXT,
-    Size TEXT,
-    Price TEXT,
-    ArticCode TEXT
+    Category TEXT,
+    Uom TEXT,
+    Location TEXT,
+    ComparePrice REAL,
+    SalePrice REAL,
+
+    VariantsJson TEXT,
+    EmployeesJson TEXT,
+    Product_id INTEGER
+
 );
+
+-- =======================================
+-- LOOTS INVENTORY TABLE
+-- =======================================
 
 CREATE TABLE IF NOT EXISTS LootsProducts (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     Barcode TEXT NOT NULL,
     Box_Id TEXT,
-    InitialQuantity INTEGER NOT NULL DEFAULT 0,
-    ScannedQuantity INTEGER NOT NULL DEFAULT 0,
+    InitialQuantity REAL NOT NULL DEFAULT 0,
+    ScannedQuantity REAL NOT NULL DEFAULT 0,
     CreatedAt TEXT NOT NULL,
     UpdatedAt TEXT NOT NULL,
+
     Name TEXT,
-    Color TEXT,
-    Size TEXT,
-    Price TEXT,
-    ArticCode TEXT
+    Category TEXT,
+    Uom TEXT,
+    Location TEXT,
+    ComparePrice REAL,
+    SalePrice REAL,
+
+    VariantsJson TEXT,
+    EmployeesJson TEXT,
+    Product_id INTEGER
+
 );
 
+
+-- =======================================
+-- LOGS TABLES (unchanged)
+-- =======================================
 CREATE TABLE IF NOT EXISTS ScanLogs (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     Barcode TEXT NOT NULL,
-    Was INTEGER NOT NULL DEFAULT 0,
-    IncrementBy INTEGER NOT NULL DEFAULT 1,
+    Was REAL NOT NULL DEFAULT 0,
+    IncrementBy REAL NOT NULL DEFAULT 1,
     IsValue INTEGER NOT NULL DEFAULT 0,
     UpdatedAt TEXT NOT NULL,
     IsManual INTEGER DEFAULT NULL,
-    Section TEXT DEFAULT NULL
+    Section TEXT DEFAULT NULL,
+    Product_id INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS LootsScanLogs (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     Barcode TEXT NOT NULL,
     Box_Id TEXT,
-    Was INTEGER NOT NULL DEFAULT 0,
-    IncrementBy INTEGER NOT NULL DEFAULT 1,
+    Was REAL NOT NULL DEFAULT 0,
+    IncrementBy REAL NOT NULL DEFAULT 1,
     IsValue INTEGER NOT NULL DEFAULT 0,
     UpdatedAt TEXT NOT NULL,
     IsManual INTEGER DEFAULT NULL,
-    Section TEXT DEFAULT NULL
+    Section TEXT DEFAULT NULL,
+    Product_id INTEGER
 );
 ";
+
             cmd.ExecuteNonQuery();
         }
+
     }
 }
